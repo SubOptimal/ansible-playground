@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+
+  tasks:
+    # "include_tasks" is executed for all elements for which the condition "item < 5" is true
+    #   the included tasks will be executed *after* this play is finished
+    # "when" is executed for all elements defined for the "loop"
+    - name: include_tasks loop
+      include_tasks: "child.yml"
+      loop: [ 0, 2, 4, 6, 8, 10 ]
+      when: item < 5
+
+    - name: main playbook
+      debug:
+        msg: the next step in the main playbook

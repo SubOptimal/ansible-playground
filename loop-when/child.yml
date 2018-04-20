@@ -1,0 +1,10 @@
+---
+# a simple example of a playbook which will be inserted into a main playbook via "include_tasks"
+# the "set_fact" defines a fact which will can checked in the main playbook
+
+- name: debug child playbook
+  debug:
+    msg: "child with item {{ item }}"
+
+- set_fact:
+    some_variable: "some value"

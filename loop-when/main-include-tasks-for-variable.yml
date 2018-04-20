@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+
+  tasks:
+    # "include_tasks" is executed for all elements for which the condition "some_variable is not defined" is true
+    #   the included tasks will be executed *after* this play is finished, as the variable "some_variable" is not
+    #   yet defined (will be in the child.yml) the "include_tasks" is executed for *all* elements defined for the
+    #   "loop"
+    # "when" is executed for all elements defined for the "loop"
+    - name: include_tasks for variable
+      include_tasks: "child.yml"
+      loop: [ 0, 2, 4, 6, 8, 10 ]
+      when: some_variable is not defined
+
+    - name: main playbook
+      debug:
+        msg: the next step in the main playbook
