@@ -1,0 +1,66 @@
+---
+- hosts: localhost
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: Ensure the cache directory exists
+      file:
+        path: "{{ cache_dir }}"
+        state: directory
+
+    - name: Check if Toolbox releases cache file exists
+      stat:
+        path: "{{ cache_file_path }}"
+      register: cache_file
+
+    - name: Check the time since last modification
+      set_fact:
+        cache_file_age: "{{ ((ansible_date_time.epoch | int) - cache_file.stat.mtime) / 60 / 60 / 24 if cache_file.stat.exists else 999 }}"
+
+    - block:
+        - name: Fetch releases JSON from URL
+          uri:
+            url: "{{ tba_release_url }}"
+            return_content: true
+          register: json_data
+
+        - name: Save retrieved JSON data to local cache file
+          copy:
+            content: "{{ json_data.content }}"
+            dest: "{{ cache_file_path }}"
+
+        - name: Extract the download link for the latest release archive
+          set_fact:
+            download_link: "{{ json_data.json.TBA[0].downloads.linux.link }}"
+      when: cache_file_age | int > 2
+
+    - block:
+        - name: Load releases JSON from local cache file
+          ansible.builtin.command: "cat {{ cache_file_path }}"
+          register: json_content
+
+        - name: Extract the download link from the cached release file
+          set_fact:
+            download_link: "{{ (json_content.stdout | from_json).TBA[0].downloads.linux.link }}"
+      when: cache_file_age | int <= 2
+
+    - name: Check if the Toolbox archive is already downloaded
+      stat:
+        path: "{{ archive_dest_dir }}/{{ download_link | basename }}"
+      register: file_stat
+
+    - name: Download the toolbox archive if not already downloaded
+      get_url:
+        url: "{{ download_link }}"
+        dest: "{{ archive_dest_dir }}"
+      when: file_stat.stat.exists == False
+
+    - name: Ensure the executables directory exists
+      ansible.builtin.file:
+        path: "{{ executables_dest_dir }}"
+        state: directory
+
+    - name: Extract the binary from Toolbox archive to the executables directory
+      ansible.builtin.shell: tar -xzf ~/Downloads/{{ download_link | basename }} -C {{ executables_dest_dir }} --strip-components=1 --wildcards "*/jetbrains-toolbox"

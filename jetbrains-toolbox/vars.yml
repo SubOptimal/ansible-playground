@@ -1,0 +1,7 @@
+---
+archive_dest_dir: "~/Downloads/"
+cache_dir: "./data"
+cache_file_path: "{{ cache_dir }}/tba_releases.json"
+executables_dest_dir: "~/.local/bin"
+tba_release_url: "https://data.services.jetbrains.com/products/releases\
+?code=TBA&latest=true&type=release"
